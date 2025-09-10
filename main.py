@@ -31,25 +31,35 @@ class RankingApp:
         btn_sair = ttk.Button(menu_frame, text="❌ Sair", width=20, command=root.quit)
         btn_sair.pack(pady=10)
 
-        # Área de exibição
+        # Área de exibição com Data Grid (Treeview)
         display_frame = ttk.Frame(frame)
         display_frame.pack(side="right", fill="both", expand=True)
 
-        # Scrollbar + área de texto
-        scrollbar = ttk.Scrollbar(display_frame)
-        scrollbar.pack(side="right", fill="y")
+        colunas = ("Posição", "Nome", "Nível", "Pontuação")
+        self.tree = ttk.Treeview(display_frame, columns=colunas, show="headings", height=20)
 
-        self.text_area = tk.Text(
-            display_frame,
-            height=20,
-            width=70,
-            state="disabled",
-            wrap="none",
-            font=("Consolas", 11)
-        )
-        self.text_area.pack(fill="both", expand=True)
-        self.text_area.config(yscrollcommand=scrollbar.set)
-        scrollbar.config(command=self.text_area.yview)
+        # Cabeçalhos
+        self.tree.heading("Posição", text="Posição")
+        self.tree.heading("Nome", text="Nome")
+        self.tree.heading("Nível", text="Nível")
+        self.tree.heading("Pontuação", text="Pontuação")
+
+        # Ajustando largura
+        self.tree.column("Posição", width=80, anchor="center")
+        self.tree.column("Nome", width=200, anchor="w")
+        self.tree.column("Nível", width=80, anchor="center")
+        self.tree.column("Pontuação", width=100, anchor="center")
+
+        # Scrollbars
+        scrollbar_y = ttk.Scrollbar(display_frame, orient=tk.VERTICAL, command=self.tree.yview)
+        scrollbar_y.pack(side=tk.RIGHT, fill=tk.Y)
+        self.tree.configure(yscroll=scrollbar_y.set)
+
+        scrollbar_x = ttk.Scrollbar(display_frame, orient=tk.HORIZONTAL, command=self.tree.xview)
+        scrollbar_x.pack(side=tk.BOTTOM, fill=tk.X)
+        self.tree.configure(xscroll=scrollbar_x.set)
+
+        self.tree.pack(fill="both", expand=True)
 
     def importar_csv(self):
         arquivo = filedialog.askopenfilename(
@@ -58,7 +68,7 @@ class RankingApp:
         )
         if arquivo:
             try:
-                lista_id = len(buscar_listas()) + 1  # cria nova lista automaticamente
+                lista_id = len(buscar_listas()) + 1
                 importar_csv(arquivo, lista_id)
                 messagebox.showinfo("Sucesso", f"✅ Dados importados para a lista {lista_id}!")
             except Exception as e:
@@ -70,7 +80,7 @@ class RankingApp:
             messagebox.showwarning("Aviso", "Nenhuma lista encontrada!")
             return
 
-        # Criar janela para escolher lista
+        # Janela para escolher lista
         lista_win = tk.Toplevel(self.root)
         lista_win.title("Escolher Lista de Ranking")
         lista_win.geometry("300x150")
@@ -94,10 +104,10 @@ class RankingApp:
         ttk.Button(lista_win, text="Mostrar", command=mostrar_ranking).pack(pady=10)
 
     def mostrar_ranking(self, jogadores, lista_id):
-        self.text_area.config(state="normal")
-        self.text_area.delete("1.0", tk.END)
+        # Limpar tabela
+        for row in self.tree.get_children():
+            self.tree.delete(row)
 
-        self.text_area.insert(tk.END, f"===== RANKING (Lista {lista_id}) =====\n\n")
         for i, (nome, nivel, pontuacao) in enumerate(jogadores, start=1):
             if i == 1:
                 destaque = "🥇"
@@ -106,10 +116,8 @@ class RankingApp:
             elif i == 3:
                 destaque = "🥉"
             else:
-                destaque = "-"
-            self.text_area.insert(tk.END, f"{destaque} {i}º | {nome:<15} | Nível {nivel:<3} | Pontuação {pontuacao}\n")
-
-        self.text_area.config(state="disabled")
+                destaque = str(i)
+            self.tree.insert("", tk.END, values=(destaque, nome, nivel, pontuacao))
 
 if __name__ == "__main__":
     criar_tabela()
